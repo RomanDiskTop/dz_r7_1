@@ -1,0 +1,10 @@
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+**/.terraform/*
+terraform.tfvars
+*.tfplan
+*.hcl
+*.info
+zabbix_pass.yml

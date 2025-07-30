@@ -103,7 +103,7 @@ Zabbix Agent: 7.0.12
 
 Плейбук обновляет или устанавливает Zabbix агента на сервера
 
-[Плейбук Debian/Ubuntu](https://github.com/RomanDiskTop/dz_r7_1/blob/main/app/zabbix-agent.yml)
+[Плейбук](https://github.com/RomanDiskTop/dz_r7_1/blob/main/app/zabbix-agent2_update.yml)
 
 Логика плейбука:
 

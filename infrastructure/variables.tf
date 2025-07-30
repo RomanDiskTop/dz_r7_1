@@ -18,7 +18,7 @@ variable "folder_id" {
 }
 
 # Infrastructure
-variable "region
+variable "region" {
   description = "Yandex Cloud region"
   type        = string
   default     = "ru-central1"

@@ -1,0 +1,129 @@
+---
+- name: Установка и настройка Zabbix Agent
+  hosts: zabbix_agents
+  become: true
+  vars:
+    #Прописываем ip/host сервера zabbix
+    zabbix_server_ip: "10.0.0.10"
+    #Прописываем актуальные репы zabbix на кажду OC
+    zabbix_debian_url: "https://repo.zabbix.com/zabbix/7.4/release/debian/pool/main/z/zabbix-release/zabbix-release_latest_7.4+debian11_all.deb"
+    zabbix_ubuntu_url: "https://repo.zabbix.com/zabbix/7.4/release/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_7.4+ubuntu24.04_all.deb"
+    zabbix_rpm_url: "https://repo.zabbix.com/zabbix/7.0/rhel/8/x86_64/zabbix-release-7.0-3.el8.noarch.rpm"
+    #Для особенных
+    zabbix_redos_package: "zabbix7-lts-agent"
+
+  tasks:
+    - name: Определение ОС
+      set_fact:
+        is_debian: "{{ ansible_facts['distribution'] == 'Debian' }}"
+        is_ubuntu: "{{ ansible_facts['distribution'] == 'Ubuntu' }}"
+        is_redhat: "{{ ansible_facts['distribution'] in ['CentOS', 'RedHat'] }}"
+        is_redos: "{{ ansible_facts['distribution'] is search('RED') }}"
+
+    # Блок работы по Debian / Ubuntu
+    - name: Установка GPG-ключа (Deb/Ubuntu)
+      apt_key:
+        url: https://repo.zabbix.com/zabbix-official-repo.key #Ссылка на ключ
+        state: present
+      when: is_debian or is_ubuntu #Применяем только по нужным
+
+    - name: Скачивание репозитория Zabbix (Deb/Ubuntu)
+      get_url:
+        url: "{{ zabbix_debian_url if is_debian else zabbix_ubuntu_url }}" #Скачиваем репы
+        dest: /tmp/zabbix-release.deb #Сбрасываем в темп
+      when: is_debian or is_ubuntu
+
+    - name: Установка репозитория Zabbix (Deb/Ubuntu)
+      apt:
+        deb: /tmp/zabbix-release.deb
+      when: is_debian or is_ubuntu
+
+    - name: Обновление кеша APT
+      apt:
+        update_cache: yes
+      when: is_debian or is_ubuntu
+
+    - name: Установка zabbix-agent2 (Deb/Ubuntu)
+      apt:
+        name: zabbix-agent2
+        state: present
+      when: is_debian or is_ubuntu
+
+    # Блок работы по RedHat (логика как и в deb)
+    - name: Установка GPG-ключа (RedHat)
+      rpm_key:
+        key: https://repo.zabbix.com/zabbix-official-repo.key
+        state: present
+      when: is_redhat
+
+    - name: Установка репозитория Zabbix (RedHat)
+      dnf:
+        name: "{{ zabbix_rpm_url }}"
+        disable_gpg_check: no
+      when: is_redhat
+
+    - name: Обновление кеша DNF
+      dnf:
+        update_cache: yes
+      when: is_redhat
+
+    - name: Установка zabbix-agent2 (RedHat/CentOS)
+      dnf:
+        name: zabbix-agent2
+        state: present
+      when: is_redhat
+
+    # Передышка чтобы все успели установиться
+    - name: Ждём появления конфигурационного файла 
+      wait_for:
+        path: /etc/zabbix/zabbix_agent2.conf
+        state: present
+        timeout: 10
+      when: is_debian or is_ubuntu
+
+    # Блок работы по RedOS
+
+    - name: Установка zabbix7-lts-agent (RedOS) #Простая установка из дефолтных репов
+      dnf:
+        name: "{{ zabbix_redos_package }}"
+        state: present
+      when: is_redos
+
+    # Настройка конфигурации агента
+
+    - name: Устанавливаем Server
+      lineinfile:
+        path: "{{ '/etc/zabbix/zabbix_agent2.conf' if not is_redos else '/etc/zabbix/zabbix_agentd.conf' }}" #Ищем путь до конфига
+        regexp: '^Server='
+        line: "Server={{ zabbix_server_ip }}" # Не сносим дефолтный конфиг, а просто делаем замену
+        backup: yes #На всякий бекап
+      notify: Перезапустить Zabbix Agent #Запускает нижний handlers
+
+    - name: Устанавливаем ServerActive
+      lineinfile:
+        path: "{{ '/etc/zabbix/zabbix_agent2.conf' if not is_redos else '/etc/zabbix/zabbix_agentd.conf' }}"
+        regexp: '^ServerActive='
+        line: "ServerActive={{ zabbix_server_ip }}"
+        backup: yes
+      notify: Перезапустить Zabbix Agent
+
+    - name: Устанавливаем Hostname
+      lineinfile:
+        path: "{{ '/etc/zabbix/zabbix_agent2.conf' if not is_redos else '/etc/zabbix/zabbix_agentd.conf' }}"
+        regexp: '^Hostname='
+        line: "Hostname={{ inventory_hostname }}"
+        backup: yes
+      notify: Перезапустить Zabbix Agent
+
+    - name: Включение и запуск службы агента
+      systemd:
+        name: "{{ 'zabbix-agent2' if not is_redos else 'zabbix-agent' }}"
+        enabled: yes
+        state: started
+      when: is_debian or is_ubuntu or is_redhat or is_redos
+
+  handlers:
+    - name: Перезапустить Zabbix Agent
+      systemd:
+        name: "{{ 'zabbix-agent2' if not is_redos else 'zabbix-agent' }}"
+        state: restarted

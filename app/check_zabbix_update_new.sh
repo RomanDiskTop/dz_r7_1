@@ -6,8 +6,8 @@ VERSION_DEBIAN="7.4.0"
 VERSION_REDOS="7.0.12"
 VERSION_CENTOS="7.4.0"
 
-BOT_TOKEN="8387838156:AAH8tX-iKbrQO3sFWyDAqsPwry8BCW8bDvo"
-CHAT_ID="977567841"
+BOT_TOKEN="Тут токен"
+CHAT_ID="Тут айдишник"
 API_URL="https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"
 INVENTORY="inventory.ini"
 
@@ -22,7 +22,7 @@ while read -r line; do
     HOST=$(echo "$line" | awk '{print $1}')
     IP=$(echo "$line" | grep -oP 'ansible_host=\K[0-9.]+')
 
-    # Получаем версию агента и информацию об ОС
+    # Получаем версию агента и инфу об ОС
     VERSION=$(zabbix_get -s "$IP" -k "agent.version" 2>/dev/null)
     OS_INFO=$(zabbix_get -s "$IP" -k "system.sw.os[full]" 2>/dev/null)
     OS_NAME=$(zabbix_get -s "$IP" -k "system.sw.os[name]" 2>/dev/null)
@@ -71,7 +71,7 @@ while read -r line; do
 
 done <<< "$AGENTS"
 
-# Экранирование для нормального переноса текста в телеграм
+# Экранирование для нормального переноса текста в телеграм v100500
 SAFE_REPORT=$(echo -e "$REPORT" | sed \
   -e 's/\./\\./g' -e 's/\-/\\-/g' -e 's/(/\\(/g' \
   -e 's/)/\\)/g' -e 's/!/\\!/g' -e 's/+/\\+/g' \

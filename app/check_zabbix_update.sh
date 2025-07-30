@@ -2,12 +2,12 @@
 
 VERSION_V1="7.4.0" # Установить актуальную версию агента с сайта https://www.zabbix.com/ru/download
 VERSION_V2="7.4.0" # Установить актуальную версию агента с сайта https://www.zabbix.com/ru/download
-BOT_TOKEN="8387838156:AAH8tX-iKbrQO3sFWyDAqsPwry8BCW8bDvo"
-CHAT_ID="977567841"
+BOT_TOKEN="------"
+CHAT_ID="-------"
 API_URL="https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"
 INVENTORY="inventory.ini"
 
-# Формируем сообщение с разделителями
+# Cообщение с разделителями
 REPORT="*Проверка версий Zabbix\-агентов*"
 REPORT+="\n═════════════════" # Для красоты
 # Парсим inventory.ini
@@ -42,7 +42,7 @@ while read -r line; do
     REPORT+="\n─────────────────────" # Для красоты
 done <<< "$AGENTS"
 
-# Экранирование для нормального переноса текста в телеге версия17
+# Экранирование для нормального переноса текста в телеге версия 17
 SAFE_REPORT=$(echo -e "$REPORT" | sed \
   -e 's/\./\\./g' -e 's/\-/\\-/g' -e 's/(/\\(/g' \
   -e 's/)/\\)/g' -e 's/!/\\!/g' -e 's/+/\\+/g' \
